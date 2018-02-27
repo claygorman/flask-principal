@@ -8,9 +8,9 @@ Links
 `````
 
 * `documentation <http://packages.python.org/Flask-Principal/>`_
-* `source <https://github.com/mattupstate/flask-principal>`_
+* `source <https://github.com/armstead-inc/flask-principal>`_
 * `development version
-  <https://github.com/mattupstate/flask-principal/raw/master#egg=Flask-Principal-dev>`_
+  <https://github.com/armstead-inc/flask-principal/raw/master#egg=Flask-Principal-dev>`_
 
 """
 
@@ -24,8 +24,8 @@ setup(
     license='MIT',
     author='Ali Afshar',
     author_email='aafshar@gmail.com',
-    maintainer='Matt Wright',
-    maintainer_email='matt@nobien.net',
+    maintainer='Clay Gorman',
+    maintainer_email='clay@armstead.io',
     description='Identity management for flask',
     long_description=__doc__,
     py_modules=['flask_principal'],
