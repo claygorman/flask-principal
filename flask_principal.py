@@ -40,7 +40,7 @@ causes the identity to be saved in the session.
 
 For example::
 
-    from flaskext.principal import Identity, identity_changed
+    from flask_principal import Identity, identity_changed
 
     def login_view(req):
         username = req.form.get('username')
@@ -57,12 +57,13 @@ Actual name: ``identity-loaded``
 Identity information providers should connect to this signal to perform two
 major activities:
 
-    1. Populate the identity object with the necessary authorization provisions.
+    1. Populate the identity object with the
+       necessary authorization provisions.
     2. Load any additional user information.
 
 For example::
 
-    from flaskext.principal import identity_loaded, RoleNeed, UserNeed
+    from flask_principal import identity_loaded, RoleNeed, UserNeed
 
     @identity_loaded.connect
     def on_identity_loaded(sender, identity):
@@ -119,15 +120,11 @@ are.
 
 
 class PermissionDenied(RuntimeError):
-    """Permission denied to the resource"""
+    """Permission denied to the resource."""
 
 
 class Identity(object):
     """Represent the user's identity.
-
-    :param id: The user id
-    :param auth_type: The authentication type used to confirm the user's
-                      identity.
 
     The identity is used to represent the user's identity in the system. This
     object is created on login, or on the start of the request as loaded from
@@ -138,6 +135,11 @@ class Identity(object):
 
     Needs that are provided by this identity should be added to the `provides`
     set after loading.
+
+    Args:
+        id: The user id.
+        auth_type: The authentication type used to confirm the user's identity.
+
     """
     def __init__(self, id, auth_type=None):
         self.id = id
@@ -147,8 +149,14 @@ class Identity(object):
     def can(self, permission):
         """Whether the identity has access to the permission.
 
-        :param permission: The permission to test provision for.
+        Args:
+            permission (Permission): The permission to test provision for.
+
+        Returns:
+            bool
+
         """
+
         return permission.allows(self)
 
     def __repr__(self):
@@ -158,7 +166,7 @@ class Identity(object):
 
 
 class AnonymousIdentity(Identity):
-    """An anonymous identity"""
+    """An anonymous identity."""
 
     def __init__(self):
         Identity.__init__(self, None)
@@ -167,29 +175,34 @@ class AnonymousIdentity(Identity):
 class IdentityContext(object):
     """The context of an identity for a permission.
 
-    .. note:: The principal is usually created by the flaskext.Permission.require method
+    .. note:: The principal is usually created by the
+              flask_principal.Permission.require method
               call for normal use-cases.
 
     The principal behaves as either a context manager or a decorator. The
     permission is checked for provision in the identity, and if available the
-    flow is continued (context manager) or the function is executed (decorator).
+    flow is continued (context manager) or the function is executed (decorator)
+
     """
 
     def __init__(self, permission, http_exception=None):
+        """The permission of this principal.
+
+        Args:
+            permission (BasePermission): The permission being attached.
+            http_exception: Exception code to throw.
+
+        """
         self.permission = permission
         self.http_exception = http_exception
-        """The permission of this principal
-        """
 
     @property
     def identity(self):
-        """The identity of this principal
-        """
+        """The identity of this principal."""
         return g.identity
 
     def can(self):
-        """Whether the identity has access to the permission
-        """
+        """Whether the identity has access to the permission."""
         return self.identity.can(self.permission)
 
     def __call__(self, f):
@@ -220,37 +233,45 @@ class BasePermission(object):
         return bool(self.can())
 
     def __nonzero__(self):
-        """Equivalent to ``self.can()``.
-        """
+        """Equivalent to ``self.can()``."""
         return self._bool()
 
     def __bool__(self):
-        """Equivalent to ``self.can()``.
-        """
+        """Equivalent to ``self.can()``."""
         return self._bool()
 
     def __or__(self, other):
-        """See ``OrPermission``.
-        """
+        """See ``OrPermission``."""
         return self.or_(other)
 
     def or_(self, other):
+        """Define or operator.
+
+        Args:
+            other: Take another permission object.
+
+        """
         return OrPermission(self, other)
 
     def __and__(self, other):
-        """See ``AndPermission``.
-        """
+        """See ``AndPermission``."""
         return self.and_(other)
 
     def and_(self, other):
+        """Define and operator.
+
+        Args:
+            other: Take another permission object.
+
+        """
         return AndPermission(self, other)
 
     def __invert__(self):
-        """See ``NotPermission``.
-        """
+        """See ``NotPermission``."""
         return self.invert()
 
     def invert(self):
+        """See ``invert``."""
         return NotPermission(self)
 
     def require(self, http_exception=None):
@@ -263,7 +284,12 @@ class BasePermission(object):
         exception will be raised if the identity does not meet the
         requirements.
 
-        :param http_exception: the HTTP exception code (403, 401 etc)
+        Args:
+            http_exception: the HTTP exception code (403, 401 etc)
+
+        Returns:
+            IdentityContext
+
         """
 
         if http_exception is None:
@@ -289,16 +315,19 @@ class BasePermission(object):
     def allows(self, identity):
         """Whether the identity can access this permission.
 
-        :param identity: The identity
+        Args:
+            identity: The identity
+
         """
 
         raise NotImplementedError
 
     def can(self):
-        """Whether the required context for this permission has access
+        """Whether the required context for this permission has access.
 
         This creates an identity context and tests whether it can access this
         permission
+
         """
         return self.require().can()
 
@@ -313,14 +342,16 @@ class _NaryOperatorPermission(BasePermission):
 # primatives of some kind.
 
 class OrPermission(_NaryOperatorPermission):
-    """Result of bitwise ``or`` of BasePermission"""
+    """Result of bitwise ``or`` of BasePermission."""
 
     def allows(self, identity):
         """
         Checks for any of the nested permission instances that allow the
         identity and return True, else return False.
 
-        :param identity: The identity.
+        Args:
+            identity: The identity.
+
         """
 
         for p in self.permissions:
@@ -337,12 +368,17 @@ class AndPermission(_NaryOperatorPermission):
         Checks for any of the nested permission instances that disallow
         the identity and return False, else return True.
 
-        :param identity: The identity.
-        """
+        Args:
+            identity: The identity.
 
+        Returns:
+            bool
+
+        """
         for p in self.permissions:
             if not p.allows(identity):
                 return False
+
         return True
 
 
@@ -353,6 +389,7 @@ class NotPermission(BasePermission):
     Really could be implemented by returning a transformed result of the
     source class of itself, but for the sake of clear presentation I am
     not doing that.
+
     """
 
     def __init__(self, permission):
@@ -362,37 +399,50 @@ class NotPermission(BasePermission):
         return self.permission
 
     def allows(self, identity):
+        """
+        Checks for any of the nested permission instances that disallow
+        the identity and return False, else return True.
+
+        Args:
+            identity: The identity.
+
+        Returns:
+            bool
+
+        """
         return not self.permission.allows(identity)
 
 
 class Permission(BasePermission):
     """Represents needs, any of which must be present to access a resource
 
-    :param needs: The needs for this permission
+    Args:
+        needs: The needs for this permission
+
     """
+
     def __init__(self, *needs):
-        """A set of needs, any of which must be present in an identity to have
-        access.
+        """A set of needs.
+
+        Any of which must be present in an identity to have access.
+
         """
 
         self.needs = set(needs)
         self.excludes = set()
 
     def __or__(self, other):
-        """Does the same thing as ``self.union(other)``
-        """
+        """Does the same thing as ``self.union(other)``."""
         if isinstance(other, Permission):
             return self.union(other)
         return super(Permission, self).__or__(other)
 
     def __sub__(self, other):
-        """Does the same thing as ``self.difference(other)``
-        """
+        """Does the same thing as ``self.difference(other)``."""
         return self.difference(other)
 
     def __contains__(self, other):
-        """Does the same thing as ``other.issubset(self)``.
-        """
+        """Does the same thing as ``other.issubset(self)``."""
         return other.issubset(self)
 
     def __repr__(self):
@@ -401,8 +451,13 @@ class Permission(BasePermission):
         )
 
     def reverse(self):
-        """
-        Returns reverse of current state (needs->excludes, excludes->needs)
+        """Returns reverse of current state.
+
+        (needs->excludes, excludes->needs)
+
+        Returns:
+            Permission: The permission inverted
+
         """
 
         p = Permission()
@@ -414,7 +469,12 @@ class Permission(BasePermission):
         """Create a new permission with the requirements of the union of this
         and other.
 
-        :param other: The other permission
+        Args:
+            other: The other permission
+
+        Returns:
+            Permission: The permission union.
+
         """
         p = Permission(*self.needs.union(other.needs))
         p.excludes.update(self.excludes.union(other.excludes))
@@ -423,8 +483,14 @@ class Permission(BasePermission):
     def difference(self, other):
         """Create a new permission consisting of requirements in this
         permission and not in the other.
-        """
 
+        Args:
+            other: The other permission
+
+        Returns:
+            Permission: The permission difference.
+
+        """
         p = Permission(*self.needs.difference(other.needs))
         p.excludes.update(self.excludes.difference(other.excludes))
         return p
@@ -432,7 +498,12 @@ class Permission(BasePermission):
     def issubset(self, other):
         """Whether this permission needs are a subset of another
 
-        :param other: The other permission
+        Args:
+            other: The other permission
+
+        Returns:
+            bool
+
         """
         return (
             self.needs.issubset(other.needs) and
@@ -441,8 +512,12 @@ class Permission(BasePermission):
 
     def allows(self, identity):
         """Whether the identity can access this permission.
+        Args:
+            identity: The identity.
 
-        :param identity: The identity
+        Returns:
+            bool
+
         """
         if self.needs and not self.needs.intersection(identity.provides):
             return False
@@ -454,9 +529,7 @@ class Permission(BasePermission):
 
 
 class Denial(Permission):
-    """
-    Shortcut class for passing excluded needs.
-    """
+    """Shortcut class for passing excluded needs."""
 
     def __init__(self, *excludes):
         self.excludes = set(excludes)
@@ -464,6 +537,7 @@ class Denial(Permission):
 
 
 def session_identity_loader():
+    """Load session identity."""
     if 'identity.id' in session and 'identity.auth_type' in session:
         identity = Identity(session['identity.id'],
                             session['identity.auth_type'])
@@ -471,18 +545,21 @@ def session_identity_loader():
 
 
 def session_identity_saver(identity):
+    """Save session identity."""
     session['identity.id'] = identity.id
     session['identity.auth_type'] = identity.auth_type
     session.modified = True
 
 
 class Principal(object):
-    """Principal extension
+    """Principal extension.
 
-    :param app: The flask application to extend
-    :param use_sessions: Whether to use sessions to extract and store
-                         identification.
-    :param skip_static: Whether to ignore static endpoints.
+    Args:
+        app: The flask application to extend
+        use_sessions (bool): Whether to use sessions to extract and store
+                             identification.
+        skip_static (bool): Whether to ignore static endpoints.
+
     """
     def __init__(self, app=None, use_sessions=True, skip_static=False):
         self.identity_loaders = deque()
@@ -496,13 +573,16 @@ class Principal(object):
 
     def _init_app(self, app):
         from warnings import warn
-        warn(DeprecationWarning(
-            '_init_app is deprecated, use the new init_app '
-            'method instead.'), stacklevel=1
+        warn(
+            DeprecationWarning(
+                '_init_app is deprecated, use the new init_app '
+                'method instead.'
+            ), stacklevel=1
         )
         self.init_app(app)
 
     def init_app(self, app):
+        """Initialize a new principal."""
         if hasattr(app, 'static_url_path'):
             self._static_path = app.static_url_path
         else:
@@ -518,7 +598,9 @@ class Principal(object):
     def set_identity(self, identity):
         """Set the current identity.
 
-        :param identity: The identity to set
+        Args:
+            identity: The identity to set
+
         """
 
         self._set_thread_identity(identity)
@@ -540,6 +622,7 @@ class Principal(object):
             @principals.identity_loader
             def load_identity_from_weird_usecase():
                 return Identity('ali')
+
         """
         self.identity_loaders.appendleft(f)
         return f
@@ -559,6 +642,7 @@ class Principal(object):
             @principals.identity_saver
             def save_identity_to_weird_usecase(identity):
                 my_special_cookie['identity'] = identity
+
         """
         self.identity_savers.appendleft(f)
         return f
