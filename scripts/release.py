@@ -105,7 +105,8 @@ def set_docs_version(version):
 
 
 def build_and_upload():
-    Popen([sys.executable, 'setup.py', 'sdist', 'build_sphinx', 'upload', 'upload_sphinx']).wait()
+    # Popen([sys.executable, 'setup.py', 'sdist', 'build_sphinx', 'upload', 'upload_sphinx']).wait()
+    pass
 
 
 def fail(message, *args):
@@ -182,7 +183,7 @@ def main():
     update_version(version)
     make_git_commit('Bump version number to %s', version)
     make_git_tag(version)
-    build_and_upload()
+    # build_and_upload()
 
 
 if __name__ == '__main__':
